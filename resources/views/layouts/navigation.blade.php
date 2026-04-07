@@ -101,6 +101,13 @@
                             ⚙️ {{ __('Cài đặt tài khoản') }}
                         </x-dropdown-link>
 
+                        <x-dropdown-link :href="route('premium.index')">
+                            <div class="flex items-center text-amber-600 font-bold hover:text-amber-700 transition-colors">
+                                <span class="mr-2 text-base">👑</span>
+                                <span>{{ (auth()->user()->premium_tier ?? 'none') != 'none' ? 'Quản lý Premium' : 'Nâng cấp Premium' }}</span>
+                            </div>
+                        </x-dropdown-link>
+
                         <div class="border-t border-slate-50"></div>
 
                         <form method="POST" action="{{ route('logout') }}">

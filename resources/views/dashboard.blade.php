@@ -65,10 +65,6 @@
                                 <span class="p-2 bg-white rounded-xl border border-slate-100">👤</span>
                                 <span>Trang cá nhân</span>
                             </a>
-                            <a href="{{ route('profile.edit') }}" class="flex items-center space-x-4 p-3 rounded-2xl text-slate-500 hover:bg-slate-50 font-bold text-sm transition-all">
-                                <span class="p-2 bg-white rounded-xl border border-slate-100">⚙️</span>
-                                <span>Cài đặt</span>
-                            </a>
 
                             <!-- MENU BOOKING (CÓ KIỂM TRA ĐIỀU KIỆN VÀ GỌI MODAL) -->
                             @php
@@ -88,6 +84,10 @@
                             <a href="{{ route('premium.index') }}" class="flex items-center space-x-4 p-3 rounded-2xl {{ $tier != 'none' ? 'text-indigo-600 bg-indigo-50 border border-indigo-50' : 'text-amber-600 hover:bg-amber-50 border border-amber-100' }} font-bold text-sm transition-all relative overflow-hidden group mt-4">
                                 <span class="p-2 bg-white rounded-xl border {{ $tier != 'none' ? 'border-indigo-200' : 'border-amber-200' }} shadow-sm relative z-10">👑</span>
                                 <span class="relative z-10">{{ $tier != 'none' ? 'Đổi gói Premium' : 'Nâng cấp Premium' }}</span>
+                            </a>
+                            <a href="{{ route('profile.edit') }}" class="flex items-center space-x-4 p-3 rounded-2xl text-slate-500 hover:bg-slate-50 font-bold text-sm transition-all">
+                                <span class="p-2 bg-white rounded-xl border border-slate-100">⚙️</span>
+                                <span>Cài đặt</span>
                             </a>
                         </nav>
                     </div>
