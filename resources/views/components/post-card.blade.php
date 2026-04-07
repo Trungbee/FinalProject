@@ -3,9 +3,17 @@
 <div id="post-{{ $post->id }}" class="bg-white rounded-3xl shadow-sm border border-slate-100 mb-6 overflow-hidden post-container transition-all duration-300 scroll-mt-24" data-post-id="{{ $post->id }}">
 
     <div class="flex items-center px-6 pt-6 mb-4 space-x-3">
-        <img src="https://ui-avatars.com/api/?name={{ urlencode($post->user->name) }}&background=random" class="w-10 h-10 rounded-2xl shadow-sm border-2 border-white">
+        <a href="{{ route('user.profile', $post->user->name) }}" class="shrink-0 group">
+            @if($post->user->avatar)
+                <img src="{{ asset('storage/' . $post->user->avatar) }}" class="w-10 h-10 rounded-2xl shadow-sm border-2 border-white object-cover group-hover:scale-105 transition-transform">
+            @else
+                <img src="https://ui-avatars.com/api/?name={{ urlencode($post->user->name) }}&background=random" class="w-10 h-10 rounded-2xl shadow-sm border-2 border-white group-hover:scale-105 transition-transform">
+            @endif
+        </a>
         <div>
-            <h3 class="font-bold text-slate-800 text-[15px] leading-none">{{ $post->user->name }}</h3>
+            <a href="{{ route('user.profile', $post->user->name) }}" class="hover:text-indigo-600 transition-colors">
+                <h3 class="font-bold text-slate-800 text-[15px] leading-none">{{ $post->user->name }}</h3>
+            </a>
             <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
                 @if($post->location_name)
                     <span class="text-indigo-600 italic">📍 {{ $post->location_name }}</span> •
@@ -49,9 +57,15 @@
         <div class="space-y-4 comments-list-{{ $post->id }}">
             @foreach($post->comments as $comment)
                 <div class="flex items-start space-x-3 text-sm">
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode($comment->user->name) }}&background=random" class="w-8 h-8 rounded-xl shadow-sm border border-white">
+                    <a href="{{ route('user.profile', $comment->user->name) }}" class="shrink-0">
+                        @if($comment->user->avatar)
+                            <img src="{{ asset('storage/' . $comment->user->avatar) }}" class="w-8 h-8 rounded-xl shadow-sm border border-white object-cover hover:opacity-80 transition">
+                        @else
+                            <img src="https://ui-avatars.com/api/?name={{ urlencode($comment->user->name) }}&background=random" class="w-8 h-8 rounded-xl shadow-sm border border-white hover:opacity-80 transition">
+                        @endif
+                    </a>
                     <div class="bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm flex-1">
-                        <span class="font-bold text-slate-800 text-xs">{{ $comment->user->name }}</span>
+                        <a href="{{ route('user.profile', $comment->user->name) }}" class="font-bold text-slate-800 text-xs hover:text-indigo-600 transition">{{ $comment->user->name }}</a>
                         <p class="text-slate-600 mt-0.5 leading-snug font-medium">{{ $comment->content }}</p>
                     </div>
                 </div>
@@ -59,6 +73,12 @@
         </div>
 
         <div class="mt-6 flex items-center space-x-3">
+            @if(auth()->user()->avatar)
+                <img src="{{ asset('storage/' . auth()->user()->avatar) }}" class="w-10 h-10 rounded-xl shadow-sm border border-white object-cover shrink-0">
+            @else
+                <img src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=random" class="w-10 h-10 rounded-xl shadow-sm border border-white shrink-0">
+            @endif
+
             <input type="text" id="comment-input-{{ $post->id }}" placeholder="Viết bình luận..."
                    class="flex-1 bg-white border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-100 transition-all border-none shadow-sm">
             <button type="button"

@@ -2,7 +2,11 @@
     <form action="{{ route('posts.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="flex items-start space-x-4 mb-4">
-            <img src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=random" class="w-11 h-11 rounded-full border border-gray-200">
+            @if(auth()->user()->avatar)
+                <img src="{{ asset('storage/' . auth()->user()->avatar) }}" class="w-11 h-11 rounded-full border border-gray-200 object-cover shadow-sm">
+            @else
+                <img src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=random" class="w-11 h-11 rounded-full border border-gray-200 shadow-sm">
+            @endif
             <div class="flex-1">
                 <textarea name="content" rows="3" placeholder="Bạn đang nghĩ gì về chuyến đi này?" required
                           class="w-full bg-gray-50 border-none rounded-xl p-4 focus:ring-1 focus:ring-indigo-400 transition resize-none text-gray-700"></textarea>

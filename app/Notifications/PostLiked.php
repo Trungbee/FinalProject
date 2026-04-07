@@ -29,6 +29,7 @@ class PostLiked extends Notification
             'message' => $this->user_who_liked->name . ' đã thích bài viết của bạn.',
             'post_id' => $this->post->id,
             'user_name' => $this->user_who_liked->name,
+            'user_id' => $this->user_who_liked->id,
             'type' => 'like'
         ];
     }

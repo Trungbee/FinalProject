@@ -31,6 +31,7 @@ class PostCommented extends Notification
             'message' => $this->user_who_commented->name . ' đã bình luận về bài viết của bạn: "' . \Str::limit($this->comment_content, 20) . '"',
             'post_id' => $this->post->id,
             'user_name' => $this->user_who_commented->name,
+            'user_id' => $this->user_who_commented->id,
             'type' => 'comment'
         ];
     }

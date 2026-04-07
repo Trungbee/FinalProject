@@ -15,7 +15,34 @@
             </div>
 
             <div class="hidden sm:flex sm:items-center sm:ms-6 space-x-4">
+                <!-- ICON TIN NHẮN (CHAT) -->
+                <x-dropdown align="right" width="80">
+                    <x-slot name="trigger">
+                        <button onclick="loadContacts()" class="relative p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-slate-100/50 rounded-full focus:outline-none mr-2">
+                            <!-- Icon Messenger Bubble -->
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
 
+                            <!-- CHẤM ĐỎ THÔNG BÁO TIN NHẮN (ĐÃ THÊM Ở ĐÂY) -->
+                            <div id="chat-unread-dot" class="hidden">
+                                <span class="absolute top-1.5 right-1.5 block h-3 w-3 rounded-full bg-red-500 ring-2 ring-white animate-pulse"></span>
+                            </div>
+                        </button>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        <div @click.stop class="bg-white rounded-2xl overflow-hidden shadow-xl">
+                            <div class="px-4 py-3 border-b border-slate-100 bg-white sticky top-0 z-10">
+                                <h2 class="text-lg font-extrabold text-slate-800 tracking-tight">Trò chuyện</h2>
+                            </div>
+                            <!-- Vùng chứa danh sách người dùng -->
+                            <div id="contacts-container" class="max-h-[350px] overflow-y-auto custom-scrollbar bg-white p-2 space-y-1">
+                                <div class="p-4 text-center text-xs text-slate-400">Đang tải...</div>
+                            </div>
+                        </div>
+                    </x-slot>
+                </x-dropdown>
+
+                <!-- ICON NOTIFICATION -->
                 <x-dropdown align="right" width="96">
                     <x-slot name="trigger">
                         <button id="notification-bell" class="relative p-2.5 text-slate-500 hover:text-indigo-600 transition-all bg-slate-100/50 rounded-full focus:outline-none">
@@ -121,17 +148,22 @@
         if (!container) return;
 
         const type = notif.data.type;
-        const iconColor = type === 'like' ? 'bg-red-500' : 'bg-green-500';
-        const iconSvg = type === 'like'
-            ? '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path></svg>'
-            : '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7z"></path></svg>';
+        let iconColor = 'bg-green-500'; // Mặc định là Comment
+        let iconSvg = '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7z"></path></svg>';
 
-        // Tạo chuỗi HTML cho thông báo mới
+        if (type === 'like') {
+            iconColor = 'bg-red-500';
+            iconSvg = '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path></svg>';
+        } else if (type === 'follow') {
+            iconColor = 'bg-blue-500';
+            iconSvg = '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6z"></path></svg>';
+        }
+
         const html = `
             <a href="/notifications/${notif.id}/go"
                class="px-4 py-4 hover:bg-slate-50 transition-colors flex items-center space-x-4 relative border-b border-slate-50/50 bg-blue-50/40">
                 <div class="relative shrink-0">
-                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(notif.data.user_name)}&background=random&color=fff" class="w-14 h-14 rounded-full object-cover border border-slate-100">
+                    <img src="${notif.avatar_url}" class="w-14 h-14 rounded-full object-cover border border-slate-100 shadow-sm">
                     <div class="absolute -bottom-1 -right-1 p-1.5 rounded-full ring-2 ring-white ${iconColor}">${iconSvg}</div>
                 </div>
                 <div class="flex-1 pr-2 text-left">
