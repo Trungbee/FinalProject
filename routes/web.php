@@ -1,38 +1,35 @@
 <?php
 
-// KHAI BÁO ĐỊA CHỈ MỚI CỦA CÁC CONTROLLER Ở ĐÂY CHO GỌN
+// KHAI BÁO CÁC CONTROLLER
 use App\Http\Controllers\Customer\ProfileController;
 use App\Http\Controllers\Customer\PostController;
 use App\Http\Controllers\Customer\FollowController;
 use App\Http\Controllers\Customer\ChatController;
+use App\Http\Controllers\Customer\BookingController;
+use App\Http\Controllers\Customer\PaymentController; // Controller mới cho PayOS
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
-// Trang chủ: Điều hướng dựa trên trạng thái đăng nhập
+// 1. Trang chủ: Điều hướng dựa trên trạng thái đăng nhập
 Route::get('/', function () {
     if (auth()->check()) return redirect()->route('dashboard');
     return redirect()->route('login');
 });
 
-// Bảng tin chính (Dashboard)
+// 2. Bảng tin chính (Dashboard)
 Route::get('/dashboard', [PostController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-// API lấy thông báo mới nhất (Real-time Long Polling)
+// 3. API lấy thông báo mới nhất (Real-time Long Polling)
 Route::get('/api/notifications/latest', function () {
     $user = auth()->user();
     $unreadCount = $user->unreadNotifications->count();
     $latestNotifications = $user->notifications()->take(15)->get();
 
-    // Bơm thêm link Avatar thật vào dữ liệu trả về cho JS
     $latestNotifications->transform(function ($notification) {
         $triggerUserId = $notification->data['user_id'] ?? null;
-        if ($triggerUserId) {
-            $triggerUser = \App\Models\User::find($triggerUserId);
-        } else {
-            $triggerUser = \App\Models\User::where('name', $notification->data['user_name'] ?? '')->first();
-        }
+        $triggerUser = $triggerUserId ? User::find($triggerUserId) : User::where('name', $notification->data['user_name'] ?? '')->first();
 
         $notification->avatar_url = ($triggerUser && $triggerUser->avatar)
             ? asset('storage/' . $triggerUser->avatar)
@@ -48,31 +45,52 @@ Route::get('/api/notifications/latest', function () {
     ]);
 })->middleware('auth');
 
-// Nhóm các Route yêu cầu đăng nhập
+// --- CÁC ROUTE YÊU CẦU ĐĂNG NHẬP ---
 Route::middleware('auth')->group(function () {
 
-    // --- Quản lý Profile ---
+    // 4. HỆ THỐNG THANH TOÁN TỰ ĐỘNG (PayOS)
+    // Khách chọn gói/đặt chỗ sẽ được đẩy sang trang thanh toán của ngân hàng
+    Route::get('/checkout/{type}/{id?}', [PaymentController::class, 'createPayment'])->name('checkout.index');
+    Route::get('/payment-success', [PaymentController::class, 'success'])->name('payment.success');
+    Route::get('/payment-cancel', [PaymentController::class, 'cancel'])->name('payment.cancel');
+
+
+    // 5. QUẢN LÝ BOOKING (Chỉ dành cho Gold/Diamond)
+    Route::get('/booking', [BookingController::class, 'index'])->name('booking.index');
+    Route::post('/booking', [BookingController::class, 'store'])->name('booking.store');
+    Route::delete('/booking/{id}', [BookingController::class, 'destroy'])->name('booking.destroy');
+
+
+    // 6. TÍNH NĂNG PREMIUM
+    Route::get('/premium', function () {
+        return view('premium.index');
+    })->name('premium.index');
+
+    // (Lưu ý: Route upgrade cũ có thể giữ lại hoặc chuyển hướng sang checkout)
+    Route::post('/premium/upgrade/{tier}', function ($tier) {
+        return redirect()->route('checkout.index', ['type' => 'premium', 'id' => $tier]);
+    })->name('premium.upgrade');
+
+
+    // 7. QUẢN LÝ PROFILE & TÀI KHOẢN
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
 
-    // --- Quản lý Bài viết & Tương tác ---
+    Route::get('/profile/{user:name}', function (User $user) {
+        $posts = $user->posts()->with(['user', 'media', 'comments.user'])->withCount(['likes', 'comments'])->latest()->get();
+        return view('profile.show', compact('user', 'posts'));
+    })->name('user.profile');
+
+
+    // 8. BÀI VIẾT & TƯƠNG TÁC
     Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
     Route::post('/posts/{post}/like', [PostController::class, 'like'])->name('posts.like');
     Route::post('/posts/{post}/comment', [PostController::class, 'comment'])->name('posts.comment');
 
-    // --- Trang cá nhân công khai ---
-    Route::get('/profile/{user:name}', function (\App\Models\User $user) {
-        $posts = $user->posts()->with(['user', 'media', 'comments.user'])
-                    ->withCount(['likes', 'comments'])
-                    ->latest()
-                    ->get();
 
-        return view('profile.show', compact('user', 'posts'));
-    })->name('user.profile');
-
-    // --- Hệ thống Thông báo ---
+    // 9. THÔNG BÁO & FOLLOW
     Route::get('/notifications/read-all', function () {
         auth()->user()->unreadNotifications->markAsRead();
         return back();
@@ -81,60 +99,22 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications/{id}/go', function ($id) {
         $notification = auth()->user()->notifications()->findOrFail($id);
         $notification->markAsRead();
-
         $postId = $notification->data['post_id'] ?? null;
-        $triggerUserName = $notification->data['user_name'] ?? null;
-
-        if ($postId) {
-            return redirect()->to(route('dashboard') . '#post-' . $postId);
-        }
-
-        if (($notification->data['type'] ?? '') == 'follow' && $triggerUserName) {
-            return redirect()->route('user.profile', $triggerUserName);
-        }
-
+        if ($postId) return redirect()->to(route('dashboard') . '#post-' . $postId);
         return redirect()->route('dashboard');
     })->name('notifications.go');
 
-    // --- Tính năng Follow ---
     Route::post('/users/{user}/follow', [FollowController::class, 'toggle'])->name('users.follow');
 
-    // --- Tính năng Chat (API endpoints) ---
+
+    // 10. API CHAT
     Route::get('/api/chat/check', [ChatController::class, 'checkUnread']);
     Route::get('/api/chat/contacts', [ChatController::class, 'contacts']);
     Route::get('/api/chat/{user}/messages', [ChatController::class, 'fetchMessages']);
     Route::post('/api/chat/{user}/send', [ChatController::class, 'sendMessage']);
-
-    // --- TÍNH NĂNG PREMIUM (3 GÓI) ---
-    Route::get('/premium', function () {
-        return view('premium.index');
-    })->name('premium.index');
-
-    Route::post('/premium/upgrade/{tier}', function ($tier) {
-        $validTiers = ['silver', 'gold', 'diamond'];
-        if (!in_array($tier, $validTiers)) {
-            abort(400, 'Gói không hợp lệ');
-        }
-
-        $user = auth()->user();
-        $user->premium_tier = $tier;
-        $user->save();
-
-        return redirect()->route('dashboard')->with('success', '🎉 Nâng cấp gói ' . strtoupper($tier) . ' thành công!');
-    })->name('premium.upgrade');
-
-    // --- TÍNH NĂNG BOOKING (CHỈ DÀNH CHO GOLD & DIAMOND) ---
-    Route::get('/booking', function () {
-        $tier = auth()->user()->premium_tier ?? 'none';
-
-        // Kiểm tra nếu không phải Vàng hoặc Kim Cương
-        if (!in_array($tier, ['gold', 'diamond'])) {
-            return redirect()->route('premium.index')->with('error', 'Tính năng Booking chỉ dành cho hội viên Vàng 🥇 hoặc Kim Cương 💎. Vui lòng nâng cấp để sử dụng!');
-        }
-
-        // Nếu hợp lệ thì cho phép vào trang booking (Bạn sẽ cần tạo file view booking/index.blade.php sau)
-        return view('booking.index');
-    })->name('booking.index');
 });
+
+// 11. WEBHOOK (Xử lý xác nhận tiền từ ngân hàng - Phải để ngoài Middleware Auth)
+Route::post('/payos/webhook', [PaymentController::class, 'handleWebhook']);
 
 require __DIR__.'/auth.php';

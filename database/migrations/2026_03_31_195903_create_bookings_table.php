@@ -9,19 +9,20 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::create('bookings', function (Blueprint $table) {
+    public function up()
+{
+    Schema::create('bookings', function (Blueprint $table) {
         $table->id();
-        $table->foreignId('user_id')->constrained()->onDelete('cascade');
-        $table->foreignId('service_id')->constrained()->onDelete('cascade');
-        $table->dateTime('check_in');
-        $table->dateTime('check_out')->nullable();
-        $table->enum('status', ['PENDING', 'CONFIRMED', 'CANCELLED'])->default('PENDING');
-        $table->decimal('total_price', 15, 2);
+        $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Ai đặt?
+        $table->string('destination'); // Đi đâu?
+        $table->date('check_in_date'); // Ngày đi
+        $table->date('check_out_date')->nullable(); // Ngày về (có thể null nếu là tour đi về trong ngày)
+        $table->integer('guests')->default(1); // Số người
+        $table->decimal('total_price', 15, 2)->nullable(); // Tổng tiền
+        $table->string('status')->default('pending'); // Trạng thái: pending, confirmed, cancelled
         $table->timestamps();
-});
-    }
+    });
+}
 
     /**
      * Reverse the migrations.
